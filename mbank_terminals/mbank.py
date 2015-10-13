@@ -217,7 +217,7 @@ for row, row_ua in zip(soup.find_all(name='tr'), soup_ua.find_all(name='tr')):
             rubric=unicode(requested_type_category),
             company_id=unicode(requested_company_id),
             actualization_date=unicode(datetime.datetime.utcnow().strftime('%d.%m.%Y')),
-            url=unicode('http://www.mbank.kiev.ua')
+            url=unicode(u'http://www.mbank.kiev.ua')
         )
 
 print """</companies>"""
