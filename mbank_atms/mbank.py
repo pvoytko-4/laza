@@ -157,12 +157,6 @@ soup = getSoupByHtml(decodeUniCharsAndSlashed(resp.content))
 resp_ua = getRequestsResponseByCurlBashCommand("curl 'http://www.mbank.kiev.ua/jscripts/ajax/list_serialize.php?city=1000%3F%3E&q=&type%5B%5D=1&type%5B%5D=2&type%5B%5D=3&type%5B%5D=4&type%5B%5D=5&lang=ua' -H 'X-Requested-With: XMLHttpRequest'")
 soup_ua = getSoupByHtml(decodeUniCharsAndSlashed(resp_ua.content))
 
-# Получаем список терминалов с кооринатами из карты. Нужно для определения города, для формирования полного адреса
-resp_map = getRequestsResponseByCurlBashCommand("curl 'http://www.mbank.kiev.ua/jscripts/ajax/map_serialize.php?city=1000%3F%3E&q=&type%5B%5D=1&lang=ru' -H 'Pragma: no-cache' -H 'Accept-Encoding: gzip, deflate, sdch' -H 'Accept-Language: ru-RU,ru;q=0.8,en-US;q=0.6,en;q=0.4' -H 'User-Agent: Mozilla/5.0 (Windows NT 6.3; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/45.0.2454.101 Safari/537.36' -H 'Accept: application/json, text/javascript, */*; q=0.01' -H 'Referer: http://www.mbank.kiev.ua/ru/kontakty/otdelenija-i-ofisy_kontakty.htm?csrf_token=e3b80d30a727c738f3cff0941f6bc55a&city=1000%3F%3E&q=&type%5B%5D=2' -H 'X-Requested-With: XMLHttpRequest' -H 'Cookie: PHPSESSID=f4ed9f095dd90ef6bfc1188701f84a17; __gfp_64b=b513EPIZ16THR11b0scw3_mstSGMrhvlXRsBNa7ACDL.g7; mbank_fb_like_box=on; _gat=1; _ga=GA1.3.1378111883.1444661498; _ym_visorc_23286403=w' -H 'Connection: keep-alive' -H 'Cache-Control: no-cache' --compressed")
-json_map = simplejson.loads(resp_map.content)
-resp_map_ua = getRequestsResponseByCurlBashCommand("curl 'http://www.mbank.kiev.ua/jscripts/ajax/map_serialize.php?city=1000%3F%3E&q=&type%5B%5D=1&lang=ua' -H 'Pragma: no-cache' -H 'Accept-Encoding: gzip, deflate, sdch' -H 'Accept-Language: ru-RU,ru;q=0.8,en-US;q=0.6,en;q=0.4' -H 'User-Agent: Mozilla/5.0 (Windows NT 6.3; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/45.0.2454.101 Safari/537.36' -H 'Accept: application/json, text/javascript, */*; q=0.01' -H 'Referer: http://www.mbank.kiev.ua/ru/kontakty/otdelenija-i-ofisy_kontakty.htm?csrf_token=e3b80d30a727c738f3cff0941f6bc55a&city=1000%3F%3E&q=&type%5B%5D=2' -H 'X-Requested-With: XMLHttpRequest' -H 'Cookie: PHPSESSID=f4ed9f095dd90ef6bfc1188701f84a17; __gfp_64b=b513EPIZ16THR11b0scw3_mstSGMrhvlXRsBNa7ACDL.g7; mbank_fb_like_box=on; _gat=1; _ga=GA1.3.1378111883.1444661498; _ym_visorc_23286403=w' -H 'Connection: keep-alive' -H 'Cache-Control: no-cache' --compressed")
-json_map_ua = simplejson.loads(resp_map_ua.content)
-
 # Банкомат              1 184105402
 # платежный терминал    2 184106974
 # Рубринка банк         3,4,5 184105398
@@ -171,21 +165,42 @@ requestet_type_mbank_num = sys.argv[1].split(',')
 requested_type_category = sys.argv[2]
 requested_company_id = sys.argv[3]
 
+# Получаем список городов, код название на рус и укр языке.
+# В итоге получаем список - [(код города(для запроса), рус., укр. название)]
+soup_city = getSoupHtmlByUrl('http://www.mbank.kiev.ua/ru/kontakty/otdelenija-i-ofisy_kontakty.htm')
+cities = [[x.get('value'), unicode(x.text)] for x in soup_city.find(id="city").find_all('option')[1:]]
+soup_city_ua = getSoupHtmlByUrl('http://www.mbank.kiev.ua/ua/kontakty/otdelenija-i-ofisy_kontakty.htm')
+
+for x in soup_city_ua.find(id="city").find_all('option')[1:]:
+    id_city = x.get('value')
+    name_city = unicode(x.text)
+    for i in cities:
+        if i[0] == id_city:
+            i.append(name_city)
+
 print """<?xml version="1.0" encoding="UTF-8"?>"""
 print """<companies xmlns:xi="http://www.w3.org/2001/XInclude" version="2.1">"""
 
-for row, row_ua in zip(soup.find_all(name='tr'), soup_ua.find_all(name='tr')):
+for city in cities:
+    resp = getRequestsResponseByCurlBashCommand("curl 'http://www.mbank.kiev.ua/jscripts/ajax/list_serialize.php?city={0}&q=&type%5B%5D=1&type%5B%5D=2&type%5B%5D=3&type%5B%5D=4&type%5B%5D=5&lang=ru' -H 'X-Requested-With: XMLHttpRequest'".format(int(city[0])))
+    soup = getSoupByHtml(decodeUniCharsAndSlashed(resp.content))
 
-    tds = row.find_all(name='td')
-    tds_ua = row_ua.find_all(name='td')
+    # Получаем список банкоматов на укр. языке
+    resp_ua = getRequestsResponseByCurlBashCommand("curl 'http://www.mbank.kiev.ua/jscripts/ajax/list_serialize.php?city={0}&q=&type%5B%5D=1&type%5B%5D=2&type%5B%5D=3&type%5B%5D=4&type%5B%5D=5&lang=ua' -H 'X-Requested-With: XMLHttpRequest'".format(int(city[0])))
+    soup_ua = getSoupByHtml(decodeUniCharsAndSlashed(resp_ua.content))
 
-    type_png = row.find(name='img').get('src')
-    type_png_ua = row_ua.find(name='img').get('src')
+    for row, row_ua in zip(soup.find_all(name='tr'), soup_ua.find_all(name='tr')):
 
-    if any([type_png.endswith('{0}.png'.format(n)) for n in requestet_type_mbank_num]) \
-            and any([type_png_ua.endswith('{0}.png'.format(n)) for n in requestet_type_mbank_num]):
+        tds = row.find_all(name='td')
+        tds_ua = row_ua.find_all(name='td')
 
-        company = u"""    <company>
+        type_png = row.find(name='img').get('src')
+        type_png_ua = row_ua.find(name='img').get('src')
+
+        if any([type_png.endswith('{0}.png'.format(n)) for n in requestet_type_mbank_num]) \
+                and any([type_png_ua.endswith('{0}.png'.format(n)) for n in requestet_type_mbank_num]):
+
+            company = u"""    <company>
         <name lang="ru">{name}</name>
         <name lang="ua">{name_ua}</name>
         <address-add lang="ru">{address_add}</address-add>
@@ -199,25 +214,25 @@ for row, row_ua in zip(soup.find_all(name='tr'), soup_ua.find_all(name='tr')):
         <actualization-date>{actualization_date}</actualization-date>
         <url>{url}</url>
     </company>
-"""
-        address = getAddress(unicode(tds[0].find(name=u'span').get_text()), unicode(tds[1].get_text()), json_map)
-        address_ua = getAddress(unicode(tds_ua[0].find(name=u'span').get_text()), unicode(tds_ua[1].get_text()), json_map_ua)
+    """
+            address = u'{0}, {1}'.format(unicode(city[1]), unicode(tds[1].get_text().replace('/', ', ')))
+            address_ua = u'{0}, {1}'.format(unicode(city[2]), unicode(tds[1].get_text().replace('/', ', ')))
 
-        print company.format(
-            name=unicode(u'Банк Михайловский, банкомат'),
-            name_ua=unicode(u'Банк Михайлівський, банкомат'),
-            address=address,
-            address_ua=address_ua,
-            address_add=unicode(tds[0].get_text()).strip(),
-            address_add_ua=unicode(tds_ua[0].get_text()).strip(),
-            phone=unicode(getPhone(unicode(tds[3].get_text()))),
-            wtime=unicode(tds[4].get_text()).strip(),
-            wtime_ua=unicode(tds_ua[4].get_text()).strip(),
-            rubric=unicode(requested_type_category),
-            company_id=unicode(requested_company_id),
-            actualization_date=unicode(datetime.datetime.utcnow().strftime('%d.%m.%Y')),
-            url=unicode(u'http://www.mbank.kiev.ua')
+            print company.format(
+                name=unicode(u'Банк Михайловский, банкомат'),
+                name_ua=unicode(u'Банк Михайлівський, банкомат'),
+                address=address,
+                address_ua=address_ua,
+                address_add=unicode(tds[0].get_text()).strip(),
+                address_add_ua=unicode(tds_ua[0].get_text()).strip(),
+                phone=unicode(getPhone(unicode(tds[3].get_text()))),
+                wtime=unicode(tds[4].get_text()).strip(),
+                wtime_ua=unicode(tds_ua[4].get_text()).strip(),
+                rubric=unicode(requested_type_category),
+                company_id=unicode(requested_company_id),
+                actualization_date=unicode(datetime.datetime.utcnow().strftime('%d.%m.%Y')),
+                url=unicode(u'http://www.mbank.kiev.ua')
 
-        )
+            )
 
 print """</companies>"""
