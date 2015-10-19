@@ -3,7 +3,11 @@
 import requests
 from bs4 import BeautifulSoup
 import time
+import sys
 
+# В скрипте устанавлиаем кодировку по умолчанию
+reload(sys)
+sys.setdefaultencoding('utf8')
 
 def getSoupHtmlByUrl(url):
     resp = requests.get(url)
@@ -46,11 +50,11 @@ while True:
 
         # Формируем JSON
         json_obj = {
-          "url": a_href_from_main,
-          "title": h1_from_post,
-          "image": img_src_from_post,
-          "category": a_category_text_from_post,
-          "keywords": [k.strip() for k in meta_keywords_content.split(',')]
+          "url": a_href_from_main.encode('utf8'),
+          "title": h1_from_post.encode('utf8'),
+          "image": img_src_from_post.encode('utf8'),
+          "category": a_category_text_from_post.encode('utf8'),
+          "keywords": [k.strip().encode('utf8') for k in meta_keywords_content.split(',')]
         }
 
         import simplejson

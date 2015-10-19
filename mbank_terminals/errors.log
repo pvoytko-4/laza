@@ -1,0 +1,6 @@
+You are using pip version 7.1.0, however version 7.1.2 is available.
+You should consider upgrading via the 'pip install --upgrade pip' command.
+Traceback (most recent call last):
+  File "mbank.py", line 239, in <module>
+    url=unicode(u'http://www.mbank.kiev.ua')
+UnicodeEncodeError: 'ascii' codec can't encode characters in position 38-41: ordinal not in range(128)
