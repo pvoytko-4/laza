@@ -10,10 +10,17 @@ reload(sys)
 sys.setdefaultencoding('utf8')
 
 def getSoupHtmlByUrl(url):
-    resp = requests.get(url)
-    if resp.status_code != 200:
-        raise RuntimeError(u'Ошибка')
-    return BeautifulSoup(resp.content, 'html.parser')
+    attempt = 0
+    # Для получения страницы используется 10 попыток с таймаутом 30 сек.
+    while attempt <= 10:
+        resp = requests.get(url, timeout=30)
+        if resp.status_code == 200:
+            return BeautifulSoup(resp.content, 'html.parser')
+        if resp.status_code != 200:
+            attempt += 1
+
+    raise RuntimeError(u'Ошибка. Использовано более 10 попыток получить страницу с данными. Url - {0}'.format(url))
+
 
 page = 0
 print "["
@@ -57,10 +64,21 @@ while True:
           "keywords": [k.strip().encode('utf8') for k in meta_keywords_content.split(',')]
         }
 
-        import simplejson
         if p != posts[0]:
             print ","
-        print simplejson.dumps(json_obj),
+
+        meta_keywords_content_str = ""
+        for k in meta_keywords_content.split(','):
+            meta_keywords_content_str+='"'+k.strip().encode('utf8')+'", '
+        if meta_keywords_content_str.endswith(', '):
+            meta_keywords_content_str = meta_keywords_content_str[:-2]
+
+        print "{",
+        print '"url": "'+a_href_from_main.strip().encode('utf8')+'", ',
+        print '"title": "'+h1_from_post.strip().encode('utf8')+'", ',
+        print '"image": "'+img_src_from_post.strip().encode('utf8')+'", ',
+        print '"category": "'+a_category_text_from_post.strip().encode('utf8')+'", ',
+        print '"keywords": ['+meta_keywords_content_str+']'+'}',
 
     # Критерий выхода - в выдаче менее 12 постов (последняя страница содержит не 12 а менее постов,
     # а за ней идет несколько путых страниц, а потом код ошибки)
