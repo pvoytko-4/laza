@@ -7,6 +7,10 @@ import sys
 import datetime
 import simplejson
 
+# В скрипте устанавлиаем кодировку по умолчанию
+reload(sys)
+sys.setdefaultencoding('utf8')
+
 def getByUrl(url):
     resp = requests.get(url)
     if resp.status_code != 200:
@@ -219,19 +223,19 @@ for city in cities:
             address_ua = u'{0}, {1}'.format(unicode(city[2]), unicode(tds[1].get_text().replace('/', ', ')))
 
             print company.format(
-                name=unicode(u'Банк Михайловский, банкомат'),
-                name_ua=unicode(u'Банк Михайлівський, банкомат'),
-                address=address,
-                address_ua=address_ua,
-                address_add=unicode(tds[0].get_text()).strip(),
-                address_add_ua=unicode(tds_ua[0].get_text()).strip(),
-                phone=unicode(getPhone(unicode(tds[3].get_text()))),
-                wtime=unicode(tds[4].get_text()).strip(),
-                wtime_ua=unicode(tds_ua[4].get_text()).strip(),
-                rubric=unicode(requested_type_category),
-                company_id=unicode(requested_company_id),
-                actualization_date=unicode(datetime.datetime.utcnow().strftime('%d.%m.%Y')),
-                url=unicode(u'http://www.mbank.kiev.ua')
+                name='Банк Михайловский, банкомат'.encode('utf8'),
+                name_ua='Банк Михайлівський, банкомат'.encode('utf8'),
+                address=address.encode('utf8'),
+                address_ua=address_ua.encode('utf8'),
+                address_add=unicode(tds[0].get_text()).strip().encode('utf8'),
+                address_add_ua=unicode(tds_ua[0].get_text()).strip().encode('utf8'),
+                phone=unicode(getPhone(unicode(tds[3].get_text()))).encode('utf8'),
+                wtime=unicode(tds[4].get_text()).strip().encode('utf8'),
+                wtime_ua=unicode(tds_ua[4].get_text()).strip().encode('utf8'),
+                rubric=unicode(requested_type_category).encode('utf8'),
+                company_id=unicode(requested_company_id).encode('utf8'),
+                actualization_date=unicode(datetime.datetime.utcnow().strftime('%d.%m.%Y')).encode('utf8'),
+                url=unicode(u'http://www.mbank.kiev.ua').encode('utf8')
 
             )
 
